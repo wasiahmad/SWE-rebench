@@ -1,18 +1,18 @@
 # This file contains logic for running evaluations on TractoAI: <https://tracto.ai/>.
 
-from __future__ import annotations
-
-import json
 import yt.wrapper as yt
+import yt.type_info as ti
 from typing import Iterable
 import datetime
 import dataclasses
+import sys
+from yt import yson
 
 from pathlib import Path
 from swebench.harness.docker_build import setup_logger
 from swebench.harness.reporting import make_run_report
 from swebench.harness.utils import EvaluationError
-from typing import cast, Any
+from typing import cast, Annotated
 
 
 from swebench.harness.constants import (
@@ -25,10 +25,28 @@ from swebench.harness.grading import get_eval_report
 from swebench.harness.test_spec.test_spec import make_test_spec, TestSpec
 
 
-@dataclasses.dataclass
+yt.config["pickling"]["ignore_system_modules"] = True
+yt.config["pickling"]["dynamic_libraries"]["enable_auto_collection"] = False
+
+
+@yt.yt_dataclass
 class TestInput:
-    test_spec: TestSpec
-    prediction: dict
+    test_spec: Annotated[
+        bytes,
+        yt.schema.types.Annotation(
+            ti_type=ti.Yson,
+            to_yt_type=lambda x: yson.dumps(dataclasses.asdict(x)),
+            from_yt_type=lambda x: TestSpec(**yson.loads(x)),
+        )
+    ] | None
+    prediction: Annotated[
+        bytes,
+        yt.schema.types.Annotation(
+            ti_type=ti.Yson,
+            to_yt_type=lambda x: yson.dumps(x),
+            from_yt_type=lambda x: yson.loads(x)
+        )
+    ] | None
     run_id: str
     timeout: int
 
@@ -36,16 +54,11 @@ class TestInput:
 @yt.yt_dataclass
 class TestOutput:
     instance_id: str
-
-
-# @yt.yt_dataclass
-class TestOutput:
-    instance_id: str
     test_output: str
     report_json_str: str
     run_instance_log: str
     patch_diff: str
-    log_dir: Path
+    # log_dir: Path
     errored: bool
 
 
@@ -55,16 +68,21 @@ def get_log_dir(pred: dict, run_id: str, instance_id: str) -> Path:
     )
     return RUN_EVALUATION_LOG_DIR / run_id / model_name_or_path / instance_id
 
-
-class RunInstanceTracto:
-    def __call__(self, test_input_raw: dict) -> Iterable[TestOutput]:
-        test_input = TestInput(**test_input_raw)
-        print(f"[instance_id={test_input.test_spec.instance_id}]")
-        yield TestOutput(instance_id=test_input.test_spec.instance_id)
+class RunInstanceTracto(yt.TypedJob):
+    def __call__(self, test_input: TestInput) -> Iterable[TestOutput]:
+        print(f"{test_input=}", file=sys.stderr)
+        yield TestOutput(
+            instance_id=test_input.test_spec.instance_id,
+            test_output="test_output_dummy",
+            report_json_str="dummy_report_json_str",
+            run_instance_log="dummy_run_instance_log",
+            patch_diff="dummy_patch_diff",
+            errored=False
+        )
 
 
 def run_instances_tracto(
-    predictions: dict,
+    predictions: dict[str, dict],
     instances: list[SWEbenchInstance],
     full_dataset: list[SWEbenchInstance],
     run_id: str,
@@ -106,34 +124,35 @@ def run_instances_tracto(
 
         yt.create("map_node", run_dir, recursive=True)
 
-        source_table_path = f"{run_dir}/source"
+        input_table_path = f"{run_dir}/input"
         output_table_path = f"{run_dir}/output"
-        print(f"{source_table_path=}")
+        print(f"{input_table_path=}")
+
         source_table_rows = [
             TestInput(
-                test_spec=dataclasses.asdict(test_spec),
+                test_spec=test_spec,
                 prediction=predictions[test_spec.instance_id],
                 run_id=run_id,
                 timeout=timeout,
             )
             for test_spec in run_test_specs
         ]
-        yt.write_table(
-            table=source_table_path,
-            # row_type=TestInput,
-            input_stream=[dataclasses.asdict(row) for row in source_table_rows],
+        yt.write_table_structured(
+            table=input_table_path,
+            row_type=TestInput,
+            input_stream=source_table_rows,
         )
 
         yt.run_map(
             RunInstanceTracto(),
-            source_table_path,
+            input_table_path,
             output_table_path,
             spec={
                 "mapper": {
                     "docker_image": "cr.turing.yt.nebius.yt/home/llm/sbkarasik/registry/swebench-fork:dev",
-                }
-            },
-            # output_format=TestOutput,
+                },
+                "max_failed_job_count": 1,
+            }
         )
 
     #     for result in results:
