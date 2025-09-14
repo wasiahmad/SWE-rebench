@@ -21,9 +21,11 @@ from swebench.harness.constants import (
     LOG_REPORT,
     LOG_INSTANCE,
     LOG_TEST_OUTPUT,
+    PATCH_DIFF,
 )
 
-# yt.config["pickling"]["safe_stream_mode"] = False
+TRACTO_PODMAN_WORKDIR = Path("/slot/sandbox/tmpfs/podman")
+TMPFS_SIZE_GB = 8
 yt.config["pickling"]["ignore_system_modules"] = True
 yt.config["pickling"]["dynamic_libraries"]["enable_auto_collection"] = False
 
@@ -76,9 +78,9 @@ class PodmanDaemon:
         podman_socket_path = "unix:///run/podman/podman.sock"
         Path("/run/podman").mkdir(parents=True, exist_ok=True)
 
-        podman_root = Path("/tmpfs/podman/root")
+        podman_root = TRACTO_PODMAN_WORKDIR / "root"
         podman_root.mkdir(parents=True, exist_ok=True)
-        podman_runroot = Path("/tmpfs/podman/runroot")
+        podman_runroot = TRACTO_PODMAN_WORKDIR / "runroot"
         podman_runroot.mkdir(parents=True, exist_ok=True)
 
         self.proc = subprocess.Popen(
@@ -135,6 +137,7 @@ class RunInstanceTracto(yt.TypedJob):
                 container_kwargs={
                     "network_mode": "host",
                 },
+                add_stderr_logger=True,
             )
             logger.info("Finished run_instance")
         logger.info("PodmanDaemon context exited")
@@ -146,7 +149,7 @@ class RunInstanceTracto(yt.TypedJob):
             test_output=self._maybe_read_text(log_dir / LOG_TEST_OUTPUT),
             report_json_str=self._maybe_read_text(log_dir / LOG_REPORT),
             run_instance_log=self._maybe_read_text(log_dir / LOG_INSTANCE),
-            patch_diff=self._maybe_read_text(log_dir / "patch.diff"),
+            patch_diff=self._maybe_read_text(log_dir / PATCH_DIFF),
             log_dir=str(log_dir),
             errored=False,
         )
@@ -224,6 +227,7 @@ def run_instances_tracto(
             spec={
                 "mapper": {
                     "docker_image": "cr.turing.yt.nebius.yt/home/llm/sbkarasik/registry/swebench-fork:2025-09-14",
+                    "tmpfs_size": TMPFS_SIZE_GB * 1024**3,
                 },
                 "max_failed_job_count": 1,
             },
@@ -235,13 +239,13 @@ def run_instances_tracto(
             # Save logs locally
             log_dir = Path(result.log_dir)
             log_dir.mkdir(parents=True, exist_ok=True)
-            with open(log_dir / "run_instance.log", "w") as f:
+            with open(log_dir / LOG_INSTANCE, "w") as f:
                 f.write(result.run_instance_log)
-            with open(log_dir / "test_output.txt", "w") as f:
+            with open(log_dir / LOG_TEST_OUTPUT, "w") as f:
                 f.write(result.test_output)
-            with open(log_dir / "patch.diff", "w") as f:
+            with open(log_dir / PATCH_DIFF, "w") as f:
                 f.write(result.patch_diff)
-            with open(log_dir / "report.json", "w") as f:
+            with open(log_dir / LOG_REPORT, "w") as f:
                 try:
                     report_json = json.loads(result.report_json_str)
                     json.dump(report_json, f, indent=4)

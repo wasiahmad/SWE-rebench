@@ -64,6 +64,7 @@ def run_instance(
     rewrite_reports: bool = False,
     container_kwargs: dict | None = None,
     add_stdout_logger: bool = False,
+    add_stderr_logger: bool = False,
 ):
     """
     Run a single instance with the given prediction.
@@ -120,7 +121,12 @@ def run_instance(
     # Set up logger
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / LOG_INSTANCE
-    logger = setup_logger(instance_id, log_file, add_stdout=add_stdout_logger)
+    logger = setup_logger(
+        instance_id,
+        log_file,
+        add_stdout=add_stdout_logger,
+        add_stderr=add_stderr_logger,
+    )
 
     # Run the instance
     container = None

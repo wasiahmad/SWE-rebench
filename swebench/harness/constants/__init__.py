@@ -70,7 +70,8 @@ KEY_MODEL = "model_name_or_path"
 KEY_PREDICTION = "model_patch"
 
 # Constants - Harness
-DOCKER_PATCH = "/tmp/patch.diff"
+PATCH_DIFF = "patch.diff"
+DOCKER_PATCH = f"/tmp/{PATCH_DIFF}"
 DOCKER_USER = "root"
 DOCKER_WORKDIR = "/testbed"
 LOG_REPORT = "report.json"

@@ -37,6 +37,7 @@ dependencies = [
     "unidiff",
     "ytsaurus-client",
     "ytsaurus-yson",
+    "pydantic",
 ]
 
 [project.optional-dependencies]
