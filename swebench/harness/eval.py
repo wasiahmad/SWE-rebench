@@ -28,7 +28,6 @@ from swebench.harness.docker_utils import (
     remove_image,
 )
 from swebench.harness.docker_build import (
-    BuildImageError,
     build_container,
     close_logger,
     setup_logger,
@@ -233,14 +232,6 @@ def run_instance(
         with open(report_path, "w") as f:
             f.write(json.dumps(report, indent=4))
         return instance_id, report
-    except EvaluationError as e:
-        error_msg = traceback.format_exc()
-        logger.info(error_msg)
-        print(e)
-    except BuildImageError as e:
-        error_msg = traceback.format_exc()
-        logger.info(error_msg)
-        print(e)
     except Exception as e:
         error_msg = (
             f"Error in evaluating model for {instance_id}: {e}\n"
@@ -248,10 +239,10 @@ def run_instance(
             f"Check ({logger.log_file}) for more information."
         )
         logger.error(error_msg)
+        raise
     finally:
         # Remove instance container + image, close logger
         cleanup_container(client, container, logger)
         if rm_image:
             remove_image(client, test_spec.instance_image_key, logger)
         close_logger(logger)
-    return
