@@ -1,12 +1,20 @@
 """
 Script to copy instance images to Tracto registry for better evaluation performance.
 
-Example:
+Example: import swe-rebench-leaderboard images
 ```bash
 python -m swebench.harness.tracto_eval.copy_images_to_tracto \
     --dataset_name nebius/SWE-rebench-leaderboard  \
     --namespace swerebench \
     --tracto-namespace <<tracto registry url>/<<your-subpath>>/swerebench
+```
+
+Example: import swe-bench-verified images
+```bash
+python -m swebench.harness.tracto_eval.copy_images_to_tracto \
+    --dataset_name SWE-bench/SWE-bench_Verified  \
+    --namespace swebench \
+    --tracto-namespace <<tracto registry url>/<<your-subpath>>/swebench
 ```
 """
 
@@ -32,6 +40,7 @@ def main(
     split: str,
     instance_ids: list[str],
     instance_image_tag: str,
+    tracto_instance_image_tag: str,
     namespace: str,
     tracto_namespace: str,
     max_workers: int,
@@ -48,7 +57,7 @@ def main(
             instance, namespace, instance_image_tag=instance_image_tag
         )
         tracto_test_spec = make_test_spec(
-            instance, tracto_namespace, instance_image_tag=instance_image_tag
+            instance, tracto_namespace, instance_image_tag=tracto_instance_image_tag
         )
 
         input_rows.append(
@@ -136,6 +145,9 @@ if __name__ == "__main__":
         "--instance_image_tag", type=str, default="latest", help="Instance image tag"
     )
     parser.add_argument(
+        "--tracto_instance_image_tag", type=str, default=None, help="Instance image tag"
+    )
+    parser.add_argument(
         "--namespace", type=str, default="swebench", help="Namespace for images"
     )
     parser.add_argument(
@@ -155,6 +167,9 @@ if __name__ == "__main__":
         split=args.split,
         instance_ids=args.instance_ids,
         instance_image_tag=args.instance_image_tag,
+        tracto_instance_image_tag=(
+            args.tracto_instance_image_tag or args.instance_image_tag
+        ),
         namespace=args.namespace,
         tracto_namespace=args.tracto_namespace,
         max_workers=args.max_workers,
