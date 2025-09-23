@@ -34,6 +34,8 @@ from swebench.harness.tracto_eval import copy_images_to_tracto_script
 
 logger = logging.getLogger(__name__)
 
+TMPFS_SIZE_GB = 32
+
 
 def main(
     dataset_name: str,
@@ -90,10 +92,12 @@ def main(
         spec={
             "mapper": {
                 "docker_image": "quay.io/skopeo/stable:latest",
-                "tmpfs_size": 32 * 1024**3,
+                "tmpfs_size": TMPFS_SIZE_GB * 1024**3,
                 "environment": {
                     "TRACTO_REGISTRY_URL": tracto_namespace,
                 },
+                # resources are autoscaled based on CPU requests
+                "cpu_limit": TMPFS_SIZE_GB / 4,
             },
             "job_count": max_workers,
             "secure_vault": {
