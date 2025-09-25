@@ -84,20 +84,12 @@ class PodmanDaemon:
     def __enter__(self):
         self.socket_path.parent.mkdir(parents=True, exist_ok=True)
 
-        podman_root = TRACTO_PODMAN_WORKDIR / "root"
-        podman_root.mkdir(parents=True, exist_ok=True)
-        podman_runroot = TRACTO_PODMAN_WORKDIR / "runroot"
-        podman_runroot.mkdir(parents=True, exist_ok=True)
-
         # TODO: configure tracto registry and docker.io as well-known registries in
         # podman, with tracto registry having priority.
 
         self.proc = subprocess.Popen(
             [
                 "podman",
-                "--storage-driver=vfs",
-                f"--root={podman_root}",
-                f"--runroot={podman_runroot}",
                 "system",
                 "service",
                 "--time=0",
@@ -131,9 +123,23 @@ class PodmanDaemon:
             self.proc.wait()
 
 
+def configure_containers():
+    storage_conf = f'''
+    [storage]
+    driver = "vfs"
+    runroot = "{TRACTO_PODMAN_WORKDIR}/runroot"
+    graphroot = "{TRACTO_PODMAN_WORKDIR}/root"
+    '''
+
+    Path("/etc/containers/storage.conf").write_text(storage_conf)
+
+    logger.info(f"podman will storage data in {TRACTO_PODMAN_WORKDIR} ")
+
+
 class RunInstanceTracto:
     def __call__(self, test_input_raw: dict) -> Iterable[dict]:
         logging_basic_config()
+        configure_containers()
 
         test_input = TestInput.model_validate(test_input_raw)
 
