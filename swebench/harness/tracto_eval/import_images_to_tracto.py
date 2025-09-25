@@ -41,13 +41,13 @@ from swebench.harness.tracto_eval.utils import (
 
 logger = logging.getLogger(__name__)
 
-# Jobs run inside containers. When we run podman or buildah inside the container,
-# layerfs can't be used, so we enable vfs storage driver. But this results in
+# As of 2025-09-25, overlayfs can't be used when we run podman/buildah inside jobs,
+# so we have to use VFS storage driver. But this results in
 # about x^2 increase in storage usage, because layers are duplicated.
 # To overcome this, we:
 # 1) squash all image layers into one during import
-# 2) have to set very large tmpfs size to handle this x^2 storage usage
-TRACTO_IMPORT_TMPFS_SIZE_GB = float(os.environ.get("TRACTO_IMPORT_TMPFS_SIZE_GB", 64))
+# 2) have to set very large tmpfs size to handle this x^2 storage usage during import
+TRACTO_IMPORT_TMPFS_SIZE_GB = int(os.environ.get("TRACTO_IMPORT_TMPFS_SIZE_GB", 64))
 TRACTO_IMPORT_IMAGE = os.environ.get(
     "TRACTO_IMPORT_IMAGE",
     "cr.turing.yt.nebius.yt/home/llm/sbkarasik/registry/swebench-fork:2025-09-22",
@@ -277,7 +277,6 @@ if __name__ == "__main__":
         required=True,
         help="Target namespace for images on Tracto",
     )
-    parser.add_argument("--squash-layers", action="store_true", help="Squash layers")
     parser.add_argument("--max-workers", type=int, default=32)
 
     args = parser.parse_args()
@@ -295,5 +294,5 @@ if __name__ == "__main__":
         namespace=args.namespace,
         tracto_namespace=args.tracto_namespace,
         max_workers=args.max_workers,
-        squash_layers=args.squash_layers,
+        squash_layers=True,
     )
