@@ -279,6 +279,9 @@ def main(
     )
     full_dataset = load_swebench_dataset(dataset_name, split, instance_ids)
 
+    if modal and tracto:
+        raise ValueError("Only one of --modal and --tracto can be used.")
+
     if modal:
         # run instances on Modal
         if not dataset:
