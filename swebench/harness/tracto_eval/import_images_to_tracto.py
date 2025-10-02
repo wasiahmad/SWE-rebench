@@ -33,6 +33,10 @@ from swebench.harness.tracto_eval.utils import (
     get_tracto_registry_creds_from_env,
     logging_basic_config,
 )
+from swebench.harness.tracto_eval.run_evaluation_tracto import (
+    TRACTO_EVAL_IMAGE_ENV,
+    validate_tracto_env_vars,
+)
 from swebench.harness.utils import load_swebench_dataset
 
 logger = logging.getLogger(__name__)
@@ -44,10 +48,6 @@ logger = logging.getLogger(__name__)
 # 1) squash all image layers into one during import
 # 2) have to set very large tmpfs size to handle this x^2 storage usage during import
 TRACTO_IMPORT_TMPFS_SIZE_GB = int(os.environ.get("TRACTO_IMPORT_TMPFS_SIZE_GB", 64))
-TRACTO_IMPORT_IMAGE = os.environ.get(
-    "TRACTO_IMPORT_IMAGE",
-    "cr.turing.yt.nebius.yt/home/llm/sbkarasik/registry/swebench-fork:2025-09-22",
-)
 
 
 class InputRow(pydantic.BaseModel):
@@ -158,6 +158,9 @@ def main(
     tracto_workdir: str | None = None,
 ):
     logger.info(f"Loading dataset={dataset_name}, split={split}")
+
+    validate_tracto_env_vars()
+
     instances = load_swebench_dataset(dataset_name, split, instance_ids)
 
     input_rows: list[InputRow] = []
@@ -203,7 +206,7 @@ def main(
         stderr_table=stderr_table,
         spec={
             "mapper": {
-                "docker_image": TRACTO_IMPORT_IMAGE,
+                "docker_image": os.environ[TRACTO_EVAL_IMAGE_ENV],
                 "tmpfs_size": TRACTO_IMPORT_TMPFS_SIZE_GB * 1024**3,
                 "environment": {
                     "TRACTO_REGISTRY_URL": tracto_namespace,
