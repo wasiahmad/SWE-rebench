@@ -9,7 +9,7 @@ python -m swebench.harness.tracto_eval.import_images_to_tracto \
     --tracto-namespace <<tracto registry url>/<<your-subpath>>/swerebench
 ```
 
-Example: import swe-bench-verified images
+Example: import SWE-bench_Verified images
 ```bash
 python -m swebench.harness.tracto_eval.import_images_to_tracto \
     --dataset_name SWE-bench/SWE-bench_Verified  \
@@ -20,24 +20,20 @@ python -m swebench.harness.tracto_eval.import_images_to_tracto \
 
 import argparse
 import logging
-from typing import Iterable
-import subprocess
-import pydantic
 import os
+import subprocess
+from typing import Iterable
 
+import pydantic
 import yt.wrapper as yt
 
-from swebench.harness.tracto_eval.utils import (
-    logging_basic_config,
-)
-from swebench.harness.utils import (
-    load_swebench_dataset,
-)
 from swebench.harness.test_spec.test_spec import make_test_spec
 from swebench.harness.tracto_eval.utils import (
-    get_tracto_registry_creds_from_env,
     configure_podman_storage,
+    get_tracto_registry_creds_from_env,
+    logging_basic_config,
 )
+from swebench.harness.utils import load_swebench_dataset
 
 logger = logging.getLogger(__name__)
 

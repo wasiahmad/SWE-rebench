@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import platform
-import os
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from pathlib import Path
 
@@ -33,7 +32,9 @@ from swebench.harness.modal_eval import (
 )
 
 from swebench.harness.tracto_eval import (
+    get_tracto_eval_run_dir,
     run_instances_tracto,
+    validate_tracto_env_vars,
 )
 from swebench.harness.test_spec.test_spec import make_test_spec
 from swebench.harness.utils import (
@@ -292,6 +293,8 @@ def main(
         if not dataset:
             print("No instances to run.")
         else:
+            validate_tracto_env_vars()
+
             run_instances_tracto(
                 predictions,
                 dataset,
@@ -300,7 +303,7 @@ def main(
                 timeout,
                 namespace=namespace,
                 instance_image_tag=instance_image_tag,
-                tracto_run_dir=f"{os.environ['TRACTO_EVAL_RUNS_DIR']}/{run_id}",
+                tracto_run_dir=get_tracto_eval_run_dir(run_id),
             )
         return
 

@@ -22,16 +22,17 @@ from swebench.harness.eval import get_log_dir, run_instance
 from swebench.harness.reporting import make_run_report
 from swebench.harness.test_spec.test_spec import TestSpec, make_test_spec
 from swebench.harness.tracto_eval.utils import (
-    get_tracto_registry_url,
-    logging_basic_config,
     configure_podman_storage,
     get_tracto_registry_creds_from_env,
+    get_tracto_registry_url,
+    logging_basic_config,
 )
 
-TRACTO_EVAL_IMAGE = os.getenv(
-    "TRACTO_EVAL_IMAGE",
-    "cr.turing.yt.nebius.yt/home/llm/sbkarasik/registry/swebench-fork:2025-09-22",
-)
+YT_PROXY_ENV = "YT_PROXY"
+YT_TOKEN_ENV = "YT_TOKEN"
+TRACTO_TENANT_ENV = "TRACTO_TENANT"
+TRACTO_EVAL_IMAGE_ENV = "TRACTO_EVAL_IMAGE"
+TRACTO_EVAL_RUNS_DIR_ENV = "TRACTO_EVAL_RUNS_DIR"
 TRACTO_EVAL_MAX_PARALLEL_JOBS = int(os.getenv("TRACTO_EVAL_MAX_PARALLEL_JOBS", "100"))
 TRACTO_EVAL_TMPFS_SIZE_GB = int(os.getenv("TRACTO_EVAL_TMPFS_SIZE_GB", "16"))
 
@@ -39,6 +40,27 @@ yt.config["pickling"]["ignore_system_modules"] = True
 yt.config["pickling"]["dynamic_libraries"]["enable_auto_collection"] = False
 
 logger = logging.getLogger(__name__)
+
+
+def validate_tracto_env_vars():
+    for env in (YT_PROXY_ENV, YT_TOKEN_ENV, TRACTO_EVAL_IMAGE_ENV):
+        if env not in os.environ:
+            raise RuntimeError(
+                f"{env} environment variable is not set, "
+                "check tracto_eval/README.md for details"
+            )
+
+
+def get_tracto_eval_run_dir(run_id: str) -> str | None:
+    if TRACTO_EVAL_RUNS_DIR_ENV in os.environ:
+        return f"{os.environ[TRACTO_EVAL_RUNS_DIR_ENV]}/{run_id}"
+
+    logger.warning(
+        f"{TRACTO_EVAL_RUNS_DIR_ENV} environment variable is not set, "
+        "consider setting it to keep your eval inputs/outputs after eval run."
+    )
+
+    return None
 
 
 class TestInput(pydantic.BaseModel):
@@ -78,9 +100,6 @@ class PodmanDaemon:
 
     def __enter__(self):
         self.socket_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # TODO: configure tracto registry and docker.io as well-known registries in
-        # podman, with tracto registry having priority.
 
         self.proc = subprocess.Popen(
             [
@@ -200,7 +219,7 @@ def run_instances_tracto(
     run_id: str,
     timeout: int,
     namespace: str | None,
-    tracto_run_dir: str,
+    tracto_run_dir: str | None = None,
     instance_image_tag: str = "latest",
 ):
     """
@@ -211,7 +230,8 @@ def run_instances_tracto(
         instances (list): List of instances
         run_id (str): Run ID
         timeout (int): Timeout for running tests
-        namespace (str | None):
+        namespace (str | None): Prefix for instance images, i.e registry URL + subpath.
+        tracto_run_dir: (str | None): Directory on Tracto where to store eval inputs/outputs.
     """
     logger.info("Creating test specs...")
     test_specs = [
@@ -231,15 +251,18 @@ def run_instances_tracto(
         run_test_specs.append(test_spec)
 
     if run_test_specs:
-        input_table_path = f"{tracto_run_dir}/input"
-        output_table_path = f"{tracto_run_dir}/output"
-        stderr_table_path = f"{tracto_run_dir}/stderr"
+        if tracto_run_dir is None:
+            input_table_path = yt.create_temp_table(prefix="input")
+            output_table_path = yt.create_temp_table(prefix="output")
+            stderr_table_path = yt.create_temp_table(prefix="stderr")
+        else:
+            if yt.exists(tracto_run_dir):
+                raise RuntimeError(f"{tracto_run_dir=} already exists on Tracto")
+            yt.create("map_node", tracto_run_dir, recursive=True)
 
-        logger.info(f"tracto_run_dir={tracto_run_dir}")
-
-        if yt.exists(tracto_run_dir):
-            raise RuntimeError(f"{tracto_run_dir=} already exists on Tracto")
-        yt.create("map_node", tracto_run_dir, recursive=True)
+            input_table_path = f"{tracto_run_dir}/input"
+            output_table_path = f"{tracto_run_dir}/output"
+            stderr_table_path = f"{tracto_run_dir}/stderr"
 
         source_table_rows = [
             TestInput(
@@ -267,7 +290,7 @@ def run_instances_tracto(
             table_writer={"max_row_weight": 128 * 1024 * 1024},  # 128 MB
             spec={
                 "mapper": {
-                    "docker_image": TRACTO_EVAL_IMAGE,
+                    "docker_image": os.environ[TRACTO_EVAL_IMAGE_ENV],
                     "tmpfs_size": TRACTO_EVAL_TMPFS_SIZE_GB * 1024**3,
                     # now resources are autoscaled based on CPU requests
                     "cpu_limit": max(TRACTO_EVAL_TMPFS_SIZE_GB / 4, 1),

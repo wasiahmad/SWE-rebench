@@ -1,11 +1,10 @@
-import urllib.parse
 import logging
-from pathlib import Path
 import os
+import urllib.parse
+from pathlib import Path
 
 import yt.wrapper as yt
 from yt import yson
-
 
 logger = logging.getLogger(__name__)
 
