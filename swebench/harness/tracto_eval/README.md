@@ -103,7 +103,7 @@ python -m swebench.harness.run_evaluation \
 
 Feel free to create a GitHub issue if you have any problems or ideas.
 
-For issues with TractoAI, please contact TractoAI team via the [form](https://tracto.ai/contactform) or join their [Discord](https://discord.gg/KFpaDAFQrP) server.
+If you are interested in TractoAI, please contact TractoAI team via the [form](https://tracto.ai/contactform) or join their [Discord](https://discord.gg/KFpaDAFQrP) server.
 
 
 # TractoAI cluster setup
