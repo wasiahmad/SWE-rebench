@@ -66,6 +66,7 @@ Although it's possible to run SWE-bench eval on Tracto using images from DockerH
 We provide a script to run import of images in parallel on top of TractoAI: `swebench/harness/tracto_eval/import_images_to_tracto.py`.
 
 Example: import images for SWE-rebench Leaderboard, 449 images as of September 2025:
+
 ```bash
 python -m swebench.harness.tracto_eval.import_images_to_tracto \
     --dataset_name nebius/SWE-rebench-leaderboard  \
@@ -74,6 +75,7 @@ python -m swebench.harness.tracto_eval.import_images_to_tracto \
 ```
 
 Example: import images for SWE-bench Verified, 500 images:
+
 ```bash
 python -m swebench.harness.tracto_eval.import_images_to_tracto \
     --dataset_name SWE-bench/SWE-bench_Verified  \
@@ -88,6 +90,7 @@ Once SWE-bench-fork is built and SWE instance images are imported to Tracto regi
 The same `swebench/harness/run_evaluation.py` can be used, just pass `--tracto yes` to use Tracto as backend.
 
 Example: run evaluation on SWE-rebench Leaderboard:
+
 ```bash
 TRACTO_EVAL_IMAGE=$TRACTO_EVAL_IMAGE \
 TRACTO_EVAL_RUNS_DIR=//home/$TRACTO_TENANT/evals \
