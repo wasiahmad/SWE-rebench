@@ -87,10 +87,10 @@ def get_requirements_by_commit(repo: str, commit: str, reqs_paths=None) -> str:
         if reqs.status_code == 200:
             all_lines += reqs.text.split("\n")
     # else:
-    # raise ValueError(
-    #     f"Could not find requirements.txt at paths {MAP_REPO_TO_REQS_PATHS[repo]} for repo {repo} at commit {commit}"
-    # )
-    # return ""
+    #     raise ValueError(
+    #         f"Could not find requirements.txt at paths {MAP_REPO_TO_REQS_PATHS[repo]} for repo {repo} at commit {commit}"
+    #     )
+    #     return ""
 
     if not all_lines:
         return ""
