@@ -135,6 +135,6 @@ Test your TractoAI setup:
 1. Install TractoAI libraries for Python: `pip install ytsaurus-client ytsaurus-yson`.
 2. Run `yt whoami` -- this command should display your username.
 
-Congratulations, setup of your TractoAI cluster is completed!
+🎉 Congratulations! Your TractoAI cluster is ready to use.
 
 You can find more details about [tenants](https://docs.tracto.ai/overview/console/#tenants) and [setup](https://docs.tracto.ai/overview/ytsaurus/setup/) in TractoAI docs.
