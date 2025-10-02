@@ -4,7 +4,7 @@
 
 This folder provides support of TractoAI as scalable drop-in backend for SWE-bench eval. It can be used to evaluate any SWE-bench-compatible tasks, including SWE-rebench -- the only requirement is pre-built Docker images.
 
-Unlike local Docker backend, TractoAI scales horizontally with the cluster size and is able to evaluate hundrends of patches in parallel.
+Unlike local Docker backend, TractoAI scales horizontally with the cluster size and is able to evaluate hundreds of patches in parallel.
 
 ## How to try
 
