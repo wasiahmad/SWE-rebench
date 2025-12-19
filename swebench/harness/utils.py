@@ -1,24 +1,24 @@
 import json
 import re
-import requests
 import traceback
-
-from packaging.version import parse as parse_version
-
 from argparse import ArgumentTypeError
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import cast
+
+import requests
 from datasets import Dataset, load_dataset, load_from_disk
 from dotenv import load_dotenv
-from pathlib import Path
+from packaging.version import parse as parse_version
 from tqdm import tqdm
-from typing import cast
+from unidiff import PatchSet
+
 from swebench.harness.constants import (
-    SWEbenchInstance,
     KEY_INSTANCE_ID,
     KEY_MODEL,
     KEY_PREDICTION,
+    SWEbenchInstance,
 )
-from unidiff import PatchSet
 
 load_dotenv()
 
@@ -143,13 +143,13 @@ def _clean_install_config(inst: dict) -> dict:
         py_val = cleaned.get("python")
         if isinstance(py_val, (str, int, float)):
             cleaned["python"] = fix_python_version(str(py_val))
-        if not cleaned.get('pre_install'):
-            cleaned['pre_install'] = []
-        if 'install' in cleaned:
-            cleaned['install'] = "LANG=C.UTF-8 LC_ALL=C.UTF-8 " + cleaned['install']
-        cleaned['test_cmd'] = "LANG=C.UTF-8 LC_ALL=C.UTF-8 " + cleaned['test_cmd']
+        if not cleaned.get("pre_install"):
+            cleaned["pre_install"] = []
+        if "install" in cleaned:
+            cleaned["install"] = "LANG=C.UTF-8 LC_ALL=C.UTF-8 " + cleaned["install"]
+        cleaned["test_cmd"] = "LANG=C.UTF-8 LC_ALL=C.UTF-8 " + cleaned["test_cmd"]
         new_inst["install_config"] = cleaned
-        new_inst['environment_setup_commit'] = new_inst['base_commit']
+        new_inst["environment_setup_commit"] = new_inst["base_commit"]
     return new_inst
 
 
@@ -334,6 +334,15 @@ def str2bool(v):
         return False
     else:
         raise ArgumentTypeError("Boolean value expected.")
+
+
+def optional_str(value: str) -> str | None:
+    """
+    Convert special string values to None, otherwise return the string as-is.
+    """
+    if value.lower() in ("none", "null", ""):
+        return None
+    return value
 
 
 def get_repo_file(repo, commit, filepath):
