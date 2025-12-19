@@ -586,9 +586,6 @@ def main(
         full_dataset,
         run_id,
         client,
-        namespace,
-        instance_image_tag,
-        env_image_tag,
     )
 
 

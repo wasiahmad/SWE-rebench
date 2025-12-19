@@ -1,14 +1,14 @@
-import docker
 import json
 from pathlib import Path
 from typing import Optional
 
+import docker
 from swebench.harness.constants import (
     KEY_INSTANCE_ID,
     KEY_MODEL,
     KEY_PREDICTION,
-    RUN_EVALUATION_LOG_DIR,
     LOG_REPORT,
+    RUN_EVALUATION_LOG_DIR,
 )
 from swebench.harness.docker_utils import list_images
 from swebench.harness.test_spec.test_spec import make_test_spec
